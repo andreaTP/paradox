@@ -339,8 +339,8 @@ case class FiddleDirective(page: Page, variables: Map[String, String])
 
       val baseUrl = node.attributes.value("baseUrl", "https://embed.scalafiddle.io/embed")
       val cssClass = node.attributes.value("cssClass", "fiddle")
-      val width = Option(node.attributes.value("width")).map("width=" + _).getOrElse("")
-      val height = Option(node.attributes.value("height")).map("height=" + _).getOrElse("")
+      val width = Option(node.attributes.value("width")).getOrElse("")
+      val height = Option(node.attributes.value("height")).getOrElse("")
       val extraParams = node.attributes.value("extraParams", "theme=light")
       val cssStyle = node.attributes.value("cssStyle", "overflow: hidden;")
       val source = resolvedSource(node, page)
@@ -356,7 +356,7 @@ case class FiddleDirective(page: Page, variables: Map[String, String])
       val fiddleSource = java.net.URLEncoder.encode(
         """
             |import fiddle.Fiddle, Fiddle.println
-            | @scalajs.js.annotation.JSExport
+            | @scalajs.js.annotation.JSExportTopLevel("ScalaFiddle")
             | object ScalaFiddle {
             |   // $FiddleStart
             |""".stripMargin + text + """
@@ -364,8 +364,23 @@ case class FiddleDirective(page: Page, variables: Map[String, String])
             | }
           """.stripMargin, "UTF-8")
 
+      val id = java.util.UUID.randomUUID().toString.replace("-", "")
+      val group = s"$id"
+
+      PrettifyVerbatimSerializer.serialize(new VerbatimGroupNode(text, lang, group), printer)
       printer.println.print(s"""
-        <iframe class="$cssClass" $width $height src="$baseUrl?$extraParams&source=$fiddleSource" frameborder="0" style="$cssStyle"></iframe>
+        <script>
+        var removeSnip$id = function() {
+          var snip = document.querySelectorAll(".group-$id")[0]
+          snip.parentNode.removeChild(snip)
+          var frm = document.getElementById("$id")
+          frm.setAttribute("style","$cssStyle")
+          frm.setAttribute("width", "$width")
+          frm.setAttribute("height", "$height")
+          return
+        }
+        </script>
+        <iframe id="$id" width=0 height=0 onLoad="removeSnip$id()" class="$cssClass" src="$baseUrl?$extraParams&source=$fiddleSource" frameborder="0" style="style="width:0; height:0; border:0; border:none; visibility: hidden;"></iframe>
         """
       )
     } catch {
