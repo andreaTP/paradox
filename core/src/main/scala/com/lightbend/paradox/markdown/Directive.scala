@@ -373,14 +373,35 @@ case class FiddleDirective(page: Page, variables: Map[String, String])
         var removeSnip$id = function() {
           var snip = document.querySelectorAll(".group-$id")[0]
           snip.parentNode.removeChild(snip)
-          var frm = document.getElementById("$id")
-          frm.setAttribute("style","$cssStyle")
-          frm.setAttribute("width", "$width")
-          frm.setAttribute("height", "$height")
+          try {
+            var frm = document.getElementById("$id")
+            frm.setAttribute("style","$cssStyle")
+            frm.setAttribute("width", "$width")
+            frm.setAttribute("height", "$height")
+          } catch (e) {}
           return
         }
+        var removeIFrame$id = function() {
+          var frm = document.getElementById("$id")
+          try {
+            frm.parentNode.removeChild(frm)
+          } catch (e) {}
+          return
+        }
+        var url$id = "$baseUrl?$extraParams&passive&source=$fiddleSource"
+        var xhttp = new XMLHttpRequest()
+        xhttp.onreadystatechange = function() {
+          if (this.readyState == 4 && this.status == 404) {
+            document.getElementById("$id").src = url$id
+            removeSnip$id()
+          } else {
+            removeIFrame$id()
+          }
+        }
+        xhttp.open("GET", $baseUrl/raw/$id/0, true)
+        xhttp.send()
         </script>
-        <iframe id="$id" width=0 height=0 onLoad="removeSnip$id()" class="$cssClass" src="$baseUrl?$extraParams&source=$fiddleSource" frameborder="0" style="style="width:0; height:0; border:0; border:none; visibility: hidden;"></iframe>
+        <iframe id="$id" width=0 height=0 class="$cssClass" frameborder="0" style="style="width:0; height:0; border:0; border:none; visibility: hidden;"></iframe>
         """
       )
     } catch {
